@@ -1,543 +1,490 @@
+
+This is a fantastic challenge! Emulating the exact look and feel of that physical Perceptron will be more demanding on CSS and potentially SVG for the knobs, but it's a great way to connect the abstract concepts to something concrete.
+
+Here's a plan to get as close as possible using HTML, CSS, and JavaScript "from scratch":
+
+**Core Idea:**
+We'll have a 4x4 grid of input "switches", a 4x4 grid of "weight dials" + 1 "bias dial", a 4x4 grid of "indicator LEDs", and an "analog meter" for the output. The output will be the direct weighted sum of inputs multiplied by weights, plus bias. Inputs will be +1 (ON) or -1 (OFF) for calculation, reflecting positive/negative voltage.
+
+**Key Visual Elements to Recreate:**
+
+1.  **Input Switches:** Small toggle switches.
+2.  **Weight Dials:** Rotary knobs with markings (e.g., -30, -10, 0, 10, 30).
+3.  **Indicator LEDs:** Red LEDs that light up when the corresponding input is ON.
+4.  **Analog Meter:** A meter face with a needle showing the output.
+5.  **Overall Layout:** Grouped components, possibly on a "board."
+
+**`retro_perceptron_emulator.html`:**
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-H">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Physical Perceptron Emulator! 💡</title>
+    <title>Retro Perceptron Emulator ⚙️</title>
     <style>
         body {
-            font-family: 'Arial Narrow', sans-serif; /* Retro feel */
-            line-height: 1.5;
+            font-family: 'Courier New', Courier, monospace; /* Retro computer font */
+            background-color: #3d2b1f; /* Dark wood grain color */
+            color: #e0e0e0; /* Light text for dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
             margin: 0;
             padding: 20px;
-            background-color: #d7ccc8; /* Brownish-grey, like a workbench */
-            color: #3e2723; /* Dark brown */
+            box-sizing: border-box;
+        }
+        .board {
+            background-color: #8d6e63; /* Lighter wood color for the board */
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4), inset 0 0 15px rgba(0,0,0,0.2);
+            display: grid;
+            grid-template-columns: auto auto auto; /* Switches | LEDs & Dials | Meter */
+            gap: 25px;
+            align-items: center;
+            border: 5px solid #5d4037; /* Darker wood border */
+        }
+        @media (max-width: 1000px) {
+            .board { grid-template-columns: 1fr; } /* Stack on smaller screens */
+        }
+
+        .panel {
+            background-color: #212121; /* Black panel look */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+            border: 1px solid #424242;
+        }
+        .panel h3 {
+            color: #ffab00; /* Amber text */
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.1em;
+            border-bottom: 1px solid #ffab00;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        /* Input Switches */
+        .switches-panel .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        .switch {
+            width: 40px; height: 40px;
+            background-color: #616161; /* Grey switch base */
+            border-radius: 4px; /* Square base for toggle */
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; position: relative;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+        .switch-lever {
+            width: 8px; height: 24px;
+            background-color: #silver;
+            border: 1px solid #757575;
+            border-radius: 3px;
+            transition: transform 0.15s ease-out;
+            transform: translateY(-7px) rotate(25deg); /* Up position */
+        }
+        .switch.active .switch-lever {
+            transform: translateY(7px) rotate(-25deg); /* Down position */
+        }
+        .switch-label {
+            position: absolute;
+            bottom: -15px;
+            font-size: 0.6em;
+            color: #bdbdbd;
+        }
+
+
+        /* Indicator LEDs & Weight Dials */
+        .leds-dials-panel {
+            display: grid;
+            grid-template-columns: 40px 1fr; /* LEDs | Dials */
+            gap: 15px;
+            align-items: center;
+        }
+        .led-column .grid, .dials-column .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: 50px; /* Ensure rows align */
+            gap: 15px;
+            align-items: center; /* Vertically align items in cells */
+        }
+        .led-column .grid { grid-template-columns: 1fr; gap: 30px; padding-left:5px; padding-right:20px;} /* Single column for LEDs, taller rows */
+        .dials-column { grid-column: 2 / 3;}
+
+        .led {
+            width: 15px; height: 15px;
+            background-color: #420000; /* Dim red */
+            border-radius: 50%;
+            border: 1px solid #212121;
+            box-shadow: inset 0 0 3px rgba(0,0,0,0.6);
+            transition: background-color 0.2s, box-shadow 0.2s;
+            margin: auto; /* Center in its grid cell */
+        }
+        .led.active {
+            background-color: #f44336; /* Bright red */
+            box-shadow: 0 0 8px #f44336, inset 0 0 3px rgba(255,255,255,0.3);
+        }
+        
+        .dial-container {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        .container {
-            max-width: 1200px;
-            width: 98%;
-            background-color: #efebe9; /* Light beige */
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-            border: 2px solid #5d4037; /* Medium brown */
-        }
-        h1, h2 {
-            color: #bf360c; /* Deep orange-red */
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        .explanation {
-            background-color: #f5f5f5; /* Off-white */
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 5px solid #bf360c;
-            font-size: 0.95em;
-        }
-        .explanation strong { color: #006064; /* Dark cyan */ }
-
-        .main-area {
-            display: grid;
-            grid-template-columns: 250px 1fr 280px; /* Inputs | Weights & Neuron | Output */
-            gap: 20px;
-            align-items: flex-start;
-        }
-        @media (max-width: 900px) {
-            .main-area {
-                grid-template-columns: 1fr; /* Stack on smaller screens */
-            }
-        }
-
-        .panel {
-            background-color: #fafafa; /* Very light grey */
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: inset 0 0 8px rgba(0,0,0,0.1);
-        }
-
-        /* Input Panel (Switches) */
-        .input-panel h3 { margin-top: 0; }
-        .input-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            width: 200px; /* Fixed width for 4x4 */
-            margin: 10px auto;
-            padding: 10px;
-            background-color: #424242; /* Dark grey, like the video's panel */
-            border-radius: 5px;
-        }
-        .input-switch {
-            width: 40px;
-            height: 40px;
-            background-color: #757575; /* Medium grey */
-            border: 1px solid #616161;
-            border-radius: 50%; /* Circular switches */
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .dial {
+            width: 45px; height: 45px;
+            background-color: #303030;
+            border-radius: 50%;
+            border: 2px solid #505050;
+            position: relative;
             cursor: pointer;
-            transition: background-color 0.2s;
-            position: relative;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.7);
         }
-        .input-switch::before { /* Lever part of switch */
-            content: '';
-            width: 6px;
-            height: 18px;
-            background-color: #bdbdbd; /* Light grey lever */
-            border-radius: 3px;
+        .dial-pointer {
+            width: 3px; height: 18px; /* Half radius */
+            background-color: #fff;
             position: absolute;
-            transition: transform 0.2s ease-in-out;
-            transform: translateY(-8px) rotate(0deg); /* Up position */
+            top: 50%; left: 50%;
+            transform-origin: 50% 0%; /* Rotate around top-center of pointer */
+            transform: translate(-50%, 0) rotate(0deg); /* Starts pointing up (0) */
+            transition: transform 0.2s;
+            border-radius: 1.5px;
         }
-        .input-switch.active { background-color: #8bc34a; /* Light green when active */ }
-        .input-switch.active::before { transform: translateY(8px) rotate(0deg); /* Down position when active */ }
-        .input-indicator-lights { /* Visualizer for active inputs next to neuron */
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 5px;
-            width: 100px;
-            margin-bottom: 20px;
-        }
-        .indicator-light {
-            width: 20px; height: 20px;
-            background-color: #616161; /* Dimmed light */
-            border-radius: 50%;
-            border: 1px solid #424242;
-            transition: background-color 0.3s;
-        }
-        .indicator-light.active { background-color: #ff5722; /* Bright orange when active */ box-shadow: 0 0 8px #ff5722;}
-
-
-        /* Weights Panel (Dials) */
-        .weights-panel {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            padding-bottom: 30px; /* Space for bias */
-            position: relative;
-        }
-        .weight-dial-control { text-align: center; font-size: 0.8em; }
-        .weight-dial-control input[type="range"] {
-            width: 100%;
-            margin: 5px 0;
-        }
-        #bias-control {
-            grid-column: span 4; /* Bias spans all columns */
-            margin-top: 15px;
-            padding-top: 15px;
+        .dial-value { font-size: 0.7em; color: #ffab00; margin-top: 3px; }
+        .bias-dial-container {
+            grid-column: span 4; /* Dials column span for centering */
+            margin-top: 15px; padding-top: 10px;
             border-top: 1px dashed #757575;
+            display: flex; justify-content: center;
         }
 
-        /* Neuron and Output Panel */
-        .neuron-output-panel { text-align: center; }
-        .neuron-visualization {
-            position: relative;
-            width: 200px; height: 100px; /* Fixed area for neuron and inputs */
-            margin: 0 auto 20px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .output-neuron-display { /* The single output neuron */
-            width: 70px; height: 70px;
-            background-color: #ffca28; /* Amber */
-            border: 2px solid #ffb300;
-            border-radius: 50%;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            z-index: 2;
-        }
-        .output-neuron-display .label { font-size: 0.8em; font-weight: bold; }
-        .output-neuron-display .value { font-size: 0.7em; }
-        .output-neuron-display.pulsing { animation: pulseEffect 0.5s; }
-        @keyframes pulseEffect {
-             0%, 100% { transform: scale(1); } 
-             50% { transform: scale(1.1); background-color: #ffe082; }
-        }
-        
-        #connectionsSvg {
-            position: absolute; top:0; left:0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 1;
-        }
-        .connection-line { stroke: #78909c; stroke-width: 1; } /* Bluish grey */
-        .anim-dot { fill: #ff7043; opacity: 0; r: 4px; } /* Deep orange */
 
-        #output-meter-container {
-            width: 200px; height: 100px;
-            background-color: #37474f; /* Dark blue-grey meter background */
-            border-radius: 5px;
-            margin: 10px auto;
-            padding: 10px;
+        /* Meter Panel */
+        .meter-panel { width: 200px; height: 180px; }
+        #meterFace {
+            width: 180px; height: 90px; /* Half circle */
+            background-color: #fff3e0; /* Creamy meter face */
+            border: 2px solid #795548; /* Brown meter border */
+            border-bottom: none;
+            border-top-left-radius: 90px;
+            border-top-right-radius: 90px;
+            margin: 10px auto 5px auto;
             position: relative;
-            box-shadow: inset 0 0 5px black;
+            overflow: hidden;
         }
-        #meter-needle {
-            width: 2px; height: 45px;
-            background-color: #ffeb3b; /* Yellow needle */
+        #meterNeedle {
+            width: 3px; height: 80px;
+            background-color: #1a237e; /* Dark blue needle */
             position: absolute;
-            bottom: 10px; left: calc(50% - 1px);
+            bottom: 0; left: calc(50% - 1.5px);
             transform-origin: 50% 100%;
-            transition: transform 0.5s ease-out;
-            transform: rotate(-90deg); /* Starts at -100 */
+            transform: rotate(0deg); /* Starts at center (0) */
+            transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         }
-        #meter-scale { /* Simple textual scale */
-            position: absolute; bottom: 12px; width: 100%; left:0;
-            display: flex; justify-content: space-between;
-            font-size: 0.7em; color: #eceff1; padding: 0 5px; box-sizing: border-box;
+        #meterLabel { font-size: 0.8em; color: #ffab00; margin-bottom:5px; }
+        #meterValueDisplay { font-size: 1.2em; color: #fff; font-weight: bold;}
+        .scale-markings { position: absolute; width:100%; height:100%; top:0; left:0;}
+        .mark { position: absolute; background-color: #5d4037; transform-origin: 50% 90px; /* Rotate around bottom center of meter face */ }
+        .mark.major { width: 2px; height: 10px; }
+        .mark.minor { width: 1px; height: 5px; }
+        .mark-label {
+            position: absolute; font-size: 0.6em; color: #5d4037;
+            transform: translate(-50%, -50%); /* Center text on its rotated position */
         }
-        #sum-display { margin-top: 5px; font-weight: bold; }
 
-        .action-buttons { text-align: center; margin-top: 25px; }
-        .action-buttons button {
-            padding: 10px 18px; margin: 0 10px;
-            background-color: #558b2f; /* Dark Green */
-            color: white; border: none; border-radius: 5px; cursor: pointer;
-            font-size: 1em; transition: background-color 0.2s;
-        }
-        .action-buttons button:hover { background-color: #33691e; }
-        .action-buttons button:disabled { background-color: #9e9e9e; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Physical Perceptron Emulator ⚙️</h1>
-        <div class="explanation">
-            <p>Let's build a virtual version of that cool physical Perceptron from the video!</p>
-            <p>Our mission: Teach this single <strong>Neuron</strong> to recognize a "T" shape.
-            The "T" is made of 5 switches ON: the top 3, and the middle one in the second row.</p>
-            <ul>
-                <li><strong>Input Switches:</strong> Flip them! ON is like +1, OFF is like -1 (for our math, though visually it's ON/OFF).</li>
-                <li><strong>Weight Dials:</strong> Adjust these like the big knobs. They tell the neuron how much to "listen" to each switch.</li>
-                <li><strong>Bias Dial:</strong> The neuron's own little push.</li>
-                <li><strong>Indicator Lights:</strong> Show which switches are ON.</li>
-                <li><strong>Output Meter:</strong> Shows the total signal strength. We want it HIGH (to the right) for a "T", and LOW (to the left) for other patterns.</li>
-            </ul>
-            <p>Click "Run Neuron!" to see the calculation! Can you find good dial settings?</p>
+    <div class="board">
+        <div class="panel switches-panel">
+            <h3>INPUT SWITCHES</h3>
+            <div class="grid" id="inputSwitchesGrid">
+                <!-- Switches generated by JS -->
+            </div>
         </div>
 
-        <div class="main-area">
-            <div class="panel input-panel">
-                <h3>1. Input Switches (4x4 Grid)</h3>
-                <div class="input-grid" id="inputGrid"></div>
-                <p style="text-align:center; font-size:0.8em;">Pattern to detect: A "T" shape</p>
-                 <button onclick="setTPattern()">Set 'T' Pattern</button>
-                 <button onclick="clearPattern()">Clear Pattern</button>
-            </div>
-
-            <div class="panel weights-panel">
-                <h3>2. Weight Dials</h3>
-                <div id="weightsContainer">
-                    <!-- Dials generated by JS -->
-                </div>
-                <div id="bias-control" class="weight-dial-control">
-                    <label for="biasDial">Bias Dial:</label>
-                    <input type="range" id="biasDial" min="-10" max="10" value="0" step="0.5">
-                    <span id="biasValueDisplay">0.0</span>
-                </div>
-            </div>
-
-            <div class="panel neuron-output-panel">
-                <h3>3. Neuron & Output</h3>
-                 <div class="input-indicator-lights" id="indicatorLights">
-                    <!-- Lights generated by JS -->
-                </div>
-                <div class="neuron-visualization">
-                     <div class="output-neuron-display" id="outputNeuron">
-                        <div class="label">Neuron</div>
-                        <div class="value">Sum: 0</div>
+        <div class="panel leds-dials-panel-container"> <!-- Wrapper for proper layout of LEDs and Dials -->
+             <h3>WEIGHTS & INDICATORS</h3>
+            <div class="leds-dials-panel">
+                <div class="led-column">
+                    <div class="grid" id="indicatorLedsGrid">
+                        <!-- LEDs generated by JS -->
                     </div>
-                    <svg id="connectionsSvg"></svg>
                 </div>
-                <div id="output-meter-container">
-                    <div id="meter-needle"></div>
-                    <div id="meter-scale"><span>-100</span><span>0</span><span>+100</span></div>
+                <div class="dials-column">
+                    <div class="grid" id="weightDialsGrid">
+                        <!-- Dials generated by JS -->
+                    </div>
+                    <div classs="bias-dial-container">
+                        <div class="dial-container" id="biasDialContainer">
+                            <!-- Bias Dial generated by JS -->
+                        </div>
+                    </div>
                 </div>
-                <div id="sum-display">Total Signal: 0.00</div>
-                 <div id="activation-display" style="margin-top:5px; font-size:0.9em;">(Sigmoid Activation: 0.500)</div>
-                 <p id="predictionText" style="font-weight:bold; font-size:1.1em;">Prediction: Maybe?</p>
             </div>
         </div>
 
-        <div class="action-buttons">
-            <button id="runButton" onclick="runNeuronAnimation()">Run Neuron!</button>
+        <div class="panel meter-panel">
+            <h3>OUTPUT</h3>
+            <div id="meterFace">
+                <div class="scale-markings" id="meterScaleMarkings"></div>
+                <div id="meterNeedle"></div>
+            </div>
+            <div id="meterLabel">MICROAMPERES D.C.</div>
+            <div id="meterValueDisplay">0 µA</div>
         </div>
     </div>
 
     <script>
-        const GRID_SIZE = 4; // 4x4 grid
-        const NUM_INPUTS = GRID_SIZE * GRID_SIZE; // 16 inputs
-        const ANIM_DURATION = 600;
-        const PULSE_DURATION = 500;
+        const NUM_INPUTS = 16; // 4x4 grid
+        const DIAL_VALUES = [-30, -20, -10, 0, 10, 20, 30]; // Values for dials
 
-        let inputStates = new Array(NUM_INPUTS).fill(0); // 0 for OFF, 1 for ON
-        let weights = new Array(NUM_INPUTS).fill(0);
-        let bias = 0;
+        let inputStates = new Array(NUM_INPUTS).fill(0); // 0 for OFF, 1 for ON (visual)
+                                                        // Calculated as -1 (OFF), +1 (ON)
+        let weights = new Array(NUM_INPUTS).fill(0).map(() => DIAL_VALUES[3]); // Start at 0
+        let bias = DIAL_VALUES[3]; // Start bias at 0
 
-        // "T" Pattern: Top row, and middle of second row. (Indices: 0,1,2,3,  4,5,6,7, ...)
-        // Inputs are numbered 0-15, row by row.
-        // Top row: 0, 1, 2, 3. Middle of 2nd row: 4 + 1 = 5 if 0-indexed, or 4+2=6 if considering visual 2nd from left.
-        // Let's do top 3 (0,1,2) and middle of next two rows (4+1=5, 8+1=9) for a clearer T
-        // For 4x4 grid: Top 3: (0,1,2). Center column, 2nd element down: (4*1 + 1) = 5.
-        // Let's use video example T: top 3 (0,1,2) on, 2nd row middle (5) on, 3rd row middle (9) on.
-        const T_PATTERN_INDICES = [0, 1, 2, 5, 9]; 
+        // Target "T" pattern (video-like)
+        // Indices: 0,1,2 (top row)
+        // 4,5,6,7 (2nd row) -> 5 is ON
+        // 8,9,10,11(3rd row) -> 9 is ON
+        const T_PATTERN_TARGET = [0,1,2,5,9];
 
-        // Suggested weights: positive for T_PATTERN_INDICES, negative elsewhere
-        const SUGGESTED_WEIGHTS = weights.map((_, i) => T_PATTERN_INDICES.includes(i) ? 3 : -0.5);
-        const SUGGESTED_BIAS = -3; // To make it harder to fire unless many T-inputs are on
 
-        const domElements = {
-            inputGrid: document.getElementById('inputGrid'),
-            weightsContainer: document.getElementById('weightsContainer'),
-            biasDial: document.getElementById('biasDial'),
-            biasValueDisplay: document.getElementById('biasValueDisplay'),
-            indicatorLights: document.getElementById('indicatorLights'),
-            outputNeuron: document.getElementById('outputNeuron'),
-            connectionsSvg: document.getElementById('connectionsSvg'),
-            meterNeedle: document.getElementById('meter-needle'),
-            sumDisplay: document.getElementById('sumDisplay'),
-            activationDisplay: document.getElementById('activation-display'),
-            predictionText: document.getElementById('predictionText'),
-            runButton: document.getElementById('runButton')
+        const dom = {
+            inputGrid: document.getElementById('inputSwitchesGrid'),
+            ledsGrid: document.getElementById('indicatorLedsGrid'),
+            dialsGrid: document.getElementById('weightDialsGrid'),
+            biasContainer: document.getElementById('biasDialContainer'),
+            meterNeedle: document.getElementById('meterNeedle'),
+            meterValueDisplay: document.getElementById('meterValueDisplay'),
+            meterScaleMarkings: document.getElementById('meterScaleMarkings'),
         };
 
-        function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
-
-        function setupGridAndDials() {
-            for (let i = 0; i < NUM_INPUTS; i++) {
-                // Input Switch
-                const sw = document.createElement('div');
-                sw.classList.add('input-switch');
-                sw.dataset.index = i;
-                sw.title = `Input ${i+1}`;
-                sw.onclick = toggleInputSwitch;
-                domElements.inputGrid.appendChild(sw);
-
-                // Indicator Light
-                const light = document.createElement('div');
-                light.classList.add('indicator-light');
-                light.id = `light-${i}`;
-                domElements.indicatorLights.appendChild(light);
-                
-                // Weight Dial
-                const dialDiv = document.createElement('div');
-                dialDiv.classList.add('weight-dial-control');
-                dialDiv.innerHTML = `
-                    <label for="w${i}">W${i+1}:</label>
-                    <input type="range" id="w${i}" min="-5" max="5" value="${SUGGESTED_WEIGHTS[i]}" step="0.1" data-index="${i}">
-                    <span id="val-w${i}">${SUGGESTED_WEIGHTS[i].toFixed(1)}</span>
-                `;
-                domElements.weightsContainer.appendChild(dialDiv);
-                document.getElementById(`w${i}`).oninput = updateWeightDial;
-                weights[i] = SUGGESTED_WEIGHTS[i]; // Initialize JS weights array
-            }
-            domElements.biasDial.value = SUGGESTED_BIAS;
-            bias = SUGGESTED_BIAS;
-            domElements.biasDial.oninput = updateBiasDial;
-            updateBiasDisplay();
-            drawConnections(); // Draw initial connections
-        }
-        
-        function setTPattern() {
-            clearPattern(false); // Clear without updating calculations yet
-            T_PATTERN_INDICES.forEach(idx => {
-                inputStates[idx] = 1;
-                const sw = domElements.inputGrid.children[idx];
-                sw.classList.add('active');
-                document.getElementById(`light-${idx}`).classList.add('active');
-            });
-            updateNeuronState();
-        }
-
-        function clearPattern(update = true) {
-            inputStates.fill(0);
-            Array.from(domElements.inputGrid.children).forEach(sw => sw.classList.remove('active'));
-            Array.from(domElements.indicatorLights.children).forEach(l => l.classList.remove('active'));
-            if (update) updateNeuronState();
-        }
-
-        function toggleInputSwitch(event) {
-            const index = parseInt(event.target.dataset.index);
-            inputStates[index] = inputStates[index] === 0 ? 1 : 0;
-            event.target.classList.toggle('active', inputStates[index] === 1);
-            document.getElementById(`light-${index}`).classList.toggle('active', inputStates[index] === 1);
-            updateNeuronState();
-        }
-
-        function updateWeightDial(event) {
-            const index = parseInt(event.target.dataset.index);
-            weights[index] = parseFloat(event.target.value);
-            document.getElementById(`val-w${index}`).textContent = weights[index].toFixed(1);
-            updateNeuronState();
-        }
-
-        function updateBiasDial() {
-            bias = parseFloat(domElements.biasDial.value);
-            updateBiasDisplay();
-            updateNeuronState();
-        }
-        function updateBiasDisplay(){
-            domElements.biasValueDisplay.textContent = bias.toFixed(1);
-        }
-        
-        // --- Neuron Calculation and Display Update (No Animation) ---
-        function calculateWeightedSum() {
-            let sum = bias;
-            for (let i = 0; i < NUM_INPUTS; i++) {
-                // The video implies ON switch is +V, OFF is -V. Let's map 0 to -1, 1 to +1.
-                const actualInputValue = inputStates[i] === 1 ? 1 : -1; 
-                sum += actualInputValue * weights[i];
-            }
-            return sum;
-        }
-
-        function updateNeuronState() {
-            const weightedSum = calculateWeightedSum();
-            const activation = sigmoid(weightedSum); // Sigmoid for 0-1 range
+        function createSwitch(index) {
+            const switchDiv = document.createElement('div');
+            switchDiv.classList.add('switch');
+            switchDiv.dataset.index = index;
             
-            domElements.outputNeuron.children[1].innerHTML = `Sum: ${weightedSum.toFixed(1)}`;
-            domElements.sumDisplay.textContent = `Total Signal: ${weightedSum.toFixed(2)}`;
-            domElements.activationDisplay.textContent = `(Sigmoid Activation: ${activation.toFixed(3)})`;
+            const lever = document.createElement('div');
+            lever.classList.add('switch-lever');
+            switchDiv.appendChild(lever);
 
-            // Meter: Map weightedSum (e.g. -50 to +50 range) to rotation (-90 to +90 deg)
-            // Assuming sum could range approx - (16*5 + 10) to + (16*5 + 10) = -90 to +90
-            const meterRange = 100; // Arbitrary max for meter
-            const meterValue = Math.max(-meterRange, Math.min(meterRange, weightedSum));
-            const rotation = (meterValue / meterRange) * 90; // Max 90 deg rotation
-            domElements.meterNeedle.style.transform = `rotate(${rotation}deg)`;
+            // const label = document.createElement('span');
+            // label.classList.add('switch-label');
+            // label.textContent = `S${index+1}`;
+            // switchDiv.appendChild(label);
 
-            // Prediction based on thresholding the raw sum (more like a classic Perceptron)
-            // Or use activation if you prefer a smoothed output
-            const threshold = 0; // Classic Perceptron threshold
-            if (weightedSum > (T_PATTERN_INDICES.length * 2.5 + SUGGESTED_BIAS - 5) ) { // Heuristic threshold for "T"
-                 domElements.predictionText.textContent = "Prediction: Looks like a T!";
-                 domElements.predictionText.style.color = "#2e7d32"; // Dark green
-            } else if (weightedSum < 0){
-                 domElements.predictionText.textContent = "Prediction: Not a T.";
-                 domElements.predictionText.style.color = "#c62828"; // Dark red
-            } else {
-                domElements.predictionText.textContent = "Prediction: Maybe?";
-                domElements.predictionText.style.color = "#546e7a"; // Blue grey
-            }
+            switchDiv.onclick = () => toggleSwitch(index);
+            return switchDiv;
+        }
+
+        function createLed(index) {
+            const ledDiv = document.createElement('div');
+            ledDiv.classList.add('led');
+            ledDiv.id = `led-${index}`;
+            return ledDiv;
         }
         
-        // --- Animations & Connections ---
-        let lightPositions = [];
-        let outputNeuronCenter;
+        function createDial(index, isBias = false) {
+            const container = document.createElement('div');
+            container.classList.add('dial-container');
 
-        function drawConnections(){
-            domElements.connectionsSvg.innerHTML = '';
-            outputNeuronCenter = getElementCenter(domElements.outputNeuron);
-            lightPositions = [];
-            const lights = domElements.indicatorLights.children;
-            for(let i=0; i<NUM_INPUTS; i++) {
-                lightPositions[i] = getElementCenter(lights[i]);
-                
-                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                line.setAttribute('x1', lightPositions[i].x);
-                line.setAttribute('y1', lightPositions[i].y);
-                line.setAttribute('x2', outputNeuronCenter.x);
-                line.setAttribute('y2', outputNeuronCenter.y);
-                line.classList.add('connection-line');
-                domElements.connectionsSvg.appendChild(line);
+            const dialDiv = document.createElement('div');
+            dialDiv.classList.add('dial');
+            dialDiv.dataset.index = index;
+            if (isBias) dialDiv.id = 'biasDialElement';
+            else dialDiv.id = `dial-${index}`;
 
-                const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                dot.id = `dot-${i}`;
-                dot.setAttribute('cx', lightPositions[i].x);
-                dot.setAttribute('cy', lightPositions[i].y);
-                dot.classList.add('anim-dot');
-                domElements.connectionsSvg.appendChild(dot);
+            const pointer = document.createElement('div');
+            pointer.classList.add('dial-pointer');
+            dialDiv.appendChild(pointer);
+            
+            const valueDisplay = document.createElement('div');
+            valueDisplay.classList.add('dial-value');
+            valueDisplay.textContent = (isBias ? bias : weights[index]).toFixed(0);
+            if (isBias) valueDisplay.id = 'biasValueText';
+            else valueDisplay.id = `dial-value-${index}`;
+
+            dialDiv.onclick = () => cycleDialValue(index, isBias);
+            
+            container.appendChild(dialDiv);
+            container.appendChild(valueDisplay);
+            if (isBias) {
+                const label = document.createElement('label');
+                label.textContent = "Bias";
+                label.style.color = "#ffab00";
+                label.style.fontSize = "0.8em";
+                container.insertBefore(label, dialDiv);
             }
+            return container;
         }
 
-        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-
-        async function animateSignalFlow(inputId) {
-            const dot = document.getElementById(`dot-${inputId}`);
-            if (!dot || inputStates[inputId] === 0) { // Only animate if input is ON
-                if(dot) dot.style.opacity = 0;
-                return;
+        function setupBoard() {
+            // Switches, LEDs, Dials
+            for (let i = 0; i < NUM_INPUTS; i++) {
+                dom.inputGrid.appendChild(createSwitch(i));
+                // LEDs will be created in 4 rows of 1. Dials in 4 rows of 4.
+                // Need a more careful grid setup in HTML for this to work easily, or more complex JS grid creation.
+                // For now, will simplify LED and Dial grid layout for direct 4x4 correspondence.
+                dom.ledsGrid.appendChild(createLed(i)); // Simplified: assuming CSS makes this 1 column
+                dom.dialsGrid.appendChild(createDial(i));
             }
-
-            const startPos = lightPositions[inputId];
-            const endPos = outputNeuronCenter;
-            const actualInputValue = 1; // Since we only animate for ON inputs (value 1)
-            const signalStrength = actualInputValue * weights[inputId];
-
-            dot.style.opacity = 0.2 + Math.min(0.8, Math.abs(signalStrength) / 5); // Opacity for strength
-            dot.setAttribute('r', 3 + Math.min(4, Math.abs(signalStrength) / 2));
-            dot.style.fill = signalStrength >=0 ? '#4caf50' : '#e53935'; // Green/Red for positive/negative effective signal
-
-
-            let startTime = null;
-            return new Promise(resolve => {
-                requestAnimationFrame(function step(timestamp) {
-                    if (!startTime) startTime = timestamp;
-                    const progress = Math.min((timestamp - startTime) / ANIM_DURATION, 1);
-                    dot.setAttribute('cx', startPos.x + (endPos.x - startPos.x) * progress);
-                    dot.setAttribute('cy', startPos.y + (endPos.y - startPos.y) * progress);
-                    if (progress < 1) requestAnimationFrame(step);
-                    else { dot.style.opacity = 0; resolve(); }
-                });
-            });
-        }
-        
-        let isAnimating = false;
-        async function runNeuronAnimation() {
-            if (isAnimating) return;
-            isAnimating = true;
-            domElements.runButton.disabled = true;
-
-            // Indicate active inputs pulsing
-            const lightPromises = [];
-            for (let i=0; i<NUM_INPUTS; i++) {
-                if (inputStates[i] === 1) {
-                    const lightEl = document.getElementById(`light-${i}`);
-                    lightEl.style.transition = 'none'; // Allow immediate change for pulse
-                    lightEl.style.backgroundColor = '#ff9800'; // Pulse color
-                    lightPromises.push(sleep(PULSE_DURATION/2).then(() => {
-                        lightEl.style.transition = 'background-color 0.3s'; // Restore transition
-                        lightEl.style.backgroundColor = '#ff5722'; // Back to active color
-                    }));
+             // Create the indicator LEDs in a single column next to the dials
+            let ledColHtml = '<div class="grid">';
+            for(let r=0; r < 4; ++r){ // Create 4 rows
+                for(let c=0; c < 1; ++c){ // 1 LED per row for now (placeholder visual)
+                     // The individual LEDs are added based on index from 0-15
                 }
             }
-            if (lightPromises.length > 0) await Promise.all(lightPromises);
-            else await sleep(PULSE_DURATION/3);
+            ledColHtml += '</div>';
+            // dom.ledsGrid.innerHTML = ledColHtml; // This was creating empty LEDs
+            // This needs to be more like:
+            // L L L L  <- Dials for first row of switches
+            // L L L L
+            // ...
+            // This means I should iterate through rows/cols for the Dials panel.
+            // And LEDs panel also has its own internal grid for the 16 LEDs.
 
-
-            const signalAnimations = [];
-            for (let i = 0; i < NUM_INPUTS; i++) {
-                if (inputStates[i] === 1) signalAnimations.push(animateSignalFlow(i));
+            // The previous setup was better:
+            // LEDs Grid (4x4 for actual LEDS)
+            dom.ledsGrid.innerHTML = ''; // Clear any placeholders
+            for (let i=0; i < NUM_INPUTS; i++) {
+                dom.ledsGrid.appendChild(createLed(i));
             }
-            if(signalAnimations.length > 0) await Promise.all(signalAnimations);
-            else await sleep(ANIM_DURATION/2);
 
 
-            updateNeuronState(); // Final state update after animations could finish
-            domElements.outputNeuron.classList.add('pulsing');
-            await sleep(PULSE_DURATION);
-            domElements.outputNeuron.classList.remove('pulsing');
-            
-            isAnimating = false;
-            domElements.runButton.disabled = false;
+            dom.biasContainer.appendChild(createDial(NUM_INPUTS, true)); // Special index for bias
+            updateAllDialPointers();
+            setupMeterScale();
+        }
+        
+        function setupMeterScale() {
+            const centerAngle = -90; // Needle points left for min
+            const rangeAngle = 180; // 180 degrees sweep
+            const numMajorTicks = 5; // e.g., -100, -50, 0, 50, 100
+            const numMinorTicksPerMajor = 4;
+
+            for (let i = 0; i <= numMajorTicks * numMinorTicksPerMajor; i++) {
+                const angle = centerAngle + (i / (numMajorTicks * numMinorTicksPerMajor)) * rangeAngle;
+                const isMajor = i % numMinorTicksPerMajor === 0;
+                
+                const mark = document.createElement('div');
+                mark.classList.add('mark', isMajor ? 'major' : 'minor');
+                mark.style.transform = `rotate(${angle}deg)`;
+                dom.meterScaleMarkings.appendChild(mark);
+
+                if (isMajor) {
+                    const value = -100 + (i / numMinorTicksPerMajor) * (200 / numMajorTicks);
+                    const label = document.createElement('div');
+                    label.classList.add('mark-label');
+                    label.textContent = value.toFixed(0);
+                    // Position label (this is tricky with rotation)
+                    const labelRadius = 85; // pixels from center
+                    const labelAngleRad = (angle + 90) * Math.PI / 180; // +90 to adjust for CSS rotation center
+                    label.style.left = `${90 + labelRadius * Math.cos(labelAngleRad)}px`;
+                    label.style.top = `${90 - labelRadius * Math.sin(labelAngleRad)}px`;
+                    dom.meterScaleMarkings.appendChild(label);
+                }
+            }
         }
 
-        // --- Initial Setup ---
+
+        function toggleSwitch(index) {
+            inputStates[index] = inputStates[index] === 0 ? 1 : 0;
+            const swEl = dom.inputGrid.children[index];
+            swEl.classList.toggle('active', inputStates[index] === 1);
+            document.getElementById(`led-${index}`).classList.toggle('active', inputStates[index] === 1);
+            calculateAndDisplayOutput();
+        }
+
+        function cycleDialValue(index, isBias) {
+            let currentValue;
+            if (isBias) currentValue = bias;
+            else currentValue = weights[index];
+
+            let currentIndexInDialValues = DIAL_VALUES.indexOf(currentValue);
+            if (currentIndexInDialValues === -1) currentIndexInDialValues = 3; // Default to 0 if not found
+            
+            currentIndexInDialValues = (currentIndexInDialValues + 1) % DIAL_VALUES.length;
+            const newValue = DIAL_VALUES[currentIndexInDialValues];
+
+            if (isBias) {
+                bias = newValue;
+                document.getElementById('biasValueText').textContent = bias.toFixed(0);
+            } else {
+                weights[index] = newValue;
+                document.getElementById(`dial-value-${index}`).textContent = weights[index].toFixed(0);
+            }
+            updateDialPointer(index, isBias);
+            calculateAndDisplayOutput();
+        }
+
+        function updateDialPointer(dialIndex, isBias) {
+            const value = isBias ? bias : weights[dialIndex];
+            const valueIndex = DIAL_VALUES.indexOf(value);
+            // Map -30 to -60deg, 0 to 0deg, +30 to +60deg. Total range 120deg.
+            // Angle = (value / 30) * 60 degrees. Or map index directly.
+            // Assuming 7 values: index 0 (-30) -> -60deg, index 3 (0) -> 0deg, index 6 (30) -> +60deg
+            const angle = (valueIndex - Math.floor(DIAL_VALUES.length / 2)) * (120 / (DIAL_VALUES.length -1));
+
+            const pointerEl = isBias ? 
+                document.querySelector('#biasDialElement .dial-pointer') :
+                document.querySelector(`#dial-${dialIndex} .dial-pointer`);
+            if(pointerEl) pointerEl.style.transform = `translate(-50%, 0) rotate(${angle}deg)`;
+        }
+        
+        function updateAllDialPointers() {
+            for (let i = 0; i < NUM_INPUTS; i++) {
+                updateDialPointer(i, false);
+            }
+ хронический-bi(NUM_INPUTS, true); // For bias dial
+        }
+
+
+        function calculateAndDisplayOutput() {
+            let sum = bias;
+            for (let i = 0; i < NUM_INPUTS; i++) {
+                const Vinput = inputStates[i] === 1 ? 1 : -1; // Map 0/1 to -1/+1 for calc
+                sum += Vinput * weights[i];
+            }
+            
+            // Meter: scale sum to -90 to +90 degrees for needle
+            // Max possible sum for these weights: 16 * 30 + 30 = 480 + 30 = 510.
+            // Let's cap meter visually at +/- 100 for simplicity as in video.
+            const displaySum = Math.max(-100, Math.min(100, sum));
+            const needleRotation = (displaySum / 100) * 90; // Max 90deg swing each way
+
+            dom.meterNeedle.style.transform = `rotate(${needleRotation}deg)`;
+            dom.meterValueDisplay.textContent = `${sum.toFixed(0)} µA`; // Show actual sum
+        }
+        
+        // Function to check if current pattern is the T_PATTERN_TARGET
+        function isTargetPattern() {
+            for(let i=0; i<NUM_INPUTS; i++){
+                const isTargetSwitchOn = T_PATTERN_TARGET.includes(i);
+                const isCurrentSwitchOn = (inputStates[i] === 1);
+                if(isTargetSwitchOn !== isCurrentSwitchOn) return false;
+            }
+            return true;
+        }
+        
+        // No "run" button needed if it's like physical machine - updates instantly
+        // If animations are desired, we'd re-introduce a run button.
+        // For now, keeping it direct.
+
+        // --- Initialization ---
         window.onload = () => {
-            setupGridAndDials();
-            clearPattern(); // Start with a clear pattern & calculate initial state
-        };
-         window.onresize = () => { // Redraw if window size changes
-            drawConnections();
-            // updateNeuronState(); // Also update positions if layout is very fluid
+            setupBoard();
+            calculateAndDisplayOutput(); // Initial calculation
         };
 
     </script>
 </body>
-</html> 
+</html>
