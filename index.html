@@ -3,560 +3,541 @@
 <head>
     <meta charset="UTF-H">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dial-a-Neuron! (My First Perceptron)</title>
+    <title>My Physical Perceptron Emulator! 💡</title>
     <style>
         body {
-            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial', sans-serif;
-            line-height: 1.6;
+            font-family: 'Arial Narrow', sans-serif; /* Retro feel */
+            line-height: 1.5;
             margin: 0;
             padding: 20px;
-            background-color: #e0f7fa; /* Light cyan */
-            color: #004d40; /* Dark teal */
+            background-color: #d7ccc8; /* Brownish-grey, like a workbench */
+            color: #3e2723; /* Dark brown */
             display: flex;
             flex-direction: column;
             align-items: center;
         }
         .container {
-            max-width: 1000px;
-            width: 95%;
-            background-color: #fff;
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 5px 20px rgba(0,77,64,0.2);
-            border: 4px solid #00796b; /* Teal border */
+            max-width: 1200px;
+            width: 98%;
+            background-color: #efebe9; /* Light beige */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            border: 2px solid #5d4037; /* Medium brown */
         }
-        h1, h2, h3 {
-            color: #d84315; /* Deep orange */
+        h1, h2 {
+            color: #bf360c; /* Deep orange-red */
             text-align: center;
+            margin-bottom: 15px;
         }
         .explanation {
-            background-color: #fff3e0; /* Light orange */
+            background-color: #f5f5f5; /* Off-white */
             padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            border-left: 6px solid #d84315;
-            font-size: 0.98em;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid #bf360c;
+            font-size: 0.95em;
         }
-        .explanation strong { color: #00796b; }
+        .explanation strong { color: #006064; /* Dark cyan */ }
 
-        .main-layout {
-            display: flex;
-            justify-content: space-around;
-            align-items: flex-start; /* Align tops */
+        .main-area {
+            display: grid;
+            grid-template-columns: 250px 1fr 280px; /* Inputs | Weights & Neuron | Output */
             gap: 20px;
-            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            align-items: flex-start;
+        }
+        @media (max-width: 900px) {
+            .main-area {
+                grid-template-columns: 1fr; /* Stack on smaller screens */
+            }
         }
 
-        .input-panel, .weights-panel, .network-panel {
-            background-color: #f1f8e9; /* Light green tint */
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border: 2px dashed #7cb342; /* Lime green */
+        .panel {
+            background-color: #fafafa; /* Very light grey */
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.1);
         }
 
-        .input-panel { flex-basis: 250px; }
+        /* Input Panel (Switches) */
+        .input-panel h3 { margin-top: 0; }
         .input-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            width: 150px;
-            margin: 20px auto;
-        }
-        .input-cell {
-            width: 60px;
-            height: 60px;
-            background-color: #e0e0e0; /* Grey */
-            border: 2px solid #9e9e9e;
-            border-radius: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.5em;
-            cursor: pointer;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-        .input-cell.active {
-            background-color: #a5d6a7; /* Light green */
-            border-color: #4caf50; /* Green */
-            font-weight: bold;
-        }
-
-        .weights-panel { flex-basis: 300px; }
-        .weight-control {
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
+            grid-template-columns: repeat(4, 1fr);
             gap: 10px;
+            width: 200px; /* Fixed width for 4x4 */
+            margin: 10px auto;
+            padding: 10px;
+            background-color: #424242; /* Dark grey, like the video's panel */
+            border-radius: 5px;
         }
-        .weight-control label {
-            min-width: 80px;
-            font-size: 0.9em;
-        }
-        .weight-control input[type="range"] {
-            flex-grow: 1;
-            cursor: pointer;
-        }
-        .weight-control .weight-value {
-            min-width: 40px;
-            text-align: right;
-            font-weight: bold;
-        }
-
-        .network-panel {
-            flex-grow: 1; /* Take remaining space */
-            min-width: 350px; /* Minimum width */
+        .input-switch {
+            width: 40px;
+            height: 40px;
+            background-color: #757575; /* Medium grey */
+            border: 1px solid #616161;
+            border-radius: 50%; /* Circular switches */
             display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .network-visualization {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            position: relative;
-            width: 100%;
-            min-height: 200px; /* Ensure space for SVG */
-        }
-        .neuron-vis {
-            width: 80px;
-            height: 80px;
-            background-color: #ffc107; /* Amber */
-            border: 3px solid #ffa000; /* Darker amber */
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-size: 0.9em;
-            text-align: center;
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
-            z-index: 1;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
         }
-        .neuron-vis.pulsing { animation: pulseEffect 0.6s ease-in-out; }
-        @keyframes pulseEffect { /* Same pulse as before */
-            0% { transform: scale(1); }
-            50% { transform: scale(1.15); background-color: #ffecb3; box-shadow: 0px 0px 15px rgba(255,165,0,0.7);}
-            100% { transform: scale(1); }
-        }
-        #output-neuron-vis .label { font-weight: bold; }
-
-        .connections-svg {
+        .input-switch::before { /* Lever part of switch */
+            content: '';
+            width: 6px;
+            height: 18px;
+            background-color: #bdbdbd; /* Light grey lever */
+            border-radius: 3px;
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 0;
+            transition: transform 0.2s ease-in-out;
+            transform: translateY(-8px) rotate(0deg); /* Up position */
         }
-        .connection-line { stroke: #00796b; stroke-width: 1.5; }
-        .weight-display-svg { font-size: 0.7em; fill: #d84315; text-anchor: middle; }
-        .anim-dot { fill: #ff6f00; opacity: 0; r: 5px; transition: r 0.1s, fill 0.1s;}
+        .input-switch.active { background-color: #8bc34a; /* Light green when active */ }
+        .input-switch.active::before { transform: translateY(8px) rotate(0deg); /* Down position when active */ }
+        .input-indicator-lights { /* Visualizer for active inputs next to neuron */
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            width: 100px;
+            margin-bottom: 20px;
+        }
+        .indicator-light {
+            width: 20px; height: 20px;
+            background-color: #616161; /* Dimmed light */
+            border-radius: 50%;
+            border: 1px solid #424242;
+            transition: background-color 0.3s;
+        }
+        .indicator-light.active { background-color: #ff5722; /* Bright orange when active */ box-shadow: 0 0 8px #ff5722;}
 
-        .calculation-display { margin-top: 15px; font-size: 0.9em; text-align: center; width: 100%; }
-        .output-display {
-            text-align: center;
-            font-size: 1.4em;
-            margin-top: 20px; padding: 15px;
-            background-color: #e0f2f1; border: 2px solid #00796b;
-            border-radius: 10px;
-        }
-        .output-display span { font-weight: bold; font-size: 1.7em; }
-        .output-display .prediction.yes { color: #388e3c; /* Green text */ }
-        .output-display .prediction.no { color: #d32f2f; /* Red text */ }
 
-        .controls { text-align: center; margin-top: 30px; }
-        .controls button {
-            padding: 12px 20px; background-color: #f4511e; /* Orange Red */
-            color: white; border: none; border-radius: 8px; cursor: pointer;
-            font-size: 1.1em; transition: background-color 0.2s;
+        /* Weights Panel (Dials) */
+        .weights-panel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding-bottom: 30px; /* Space for bias */
+            position: relative;
         }
-        .controls button:hover { background-color: #d84315; }
-        .controls button:disabled { background-color: #bdbdbd; cursor: not-allowed; }
+        .weight-dial-control { text-align: center; font-size: 0.8em; }
+        .weight-dial-control input[type="range"] {
+            width: 100%;
+            margin: 5px 0;
+        }
+        #bias-control {
+            grid-column: span 4; /* Bias spans all columns */
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #757575;
+        }
+
+        /* Neuron and Output Panel */
+        .neuron-output-panel { text-align: center; }
+        .neuron-visualization {
+            position: relative;
+            width: 200px; height: 100px; /* Fixed area for neuron and inputs */
+            margin: 0 auto 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .output-neuron-display { /* The single output neuron */
+            width: 70px; height: 70px;
+            background-color: #ffca28; /* Amber */
+            border: 2px solid #ffb300;
+            border-radius: 50%;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+        .output-neuron-display .label { font-size: 0.8em; font-weight: bold; }
+        .output-neuron-display .value { font-size: 0.7em; }
+        .output-neuron-display.pulsing { animation: pulseEffect 0.5s; }
+        @keyframes pulseEffect {
+             0%, 100% { transform: scale(1); } 
+             50% { transform: scale(1.1); background-color: #ffe082; }
+        }
         
-        .info-box {
-            margin-top: 20px; padding: 10px; background-color: #eceff1; border-radius: 8px;
-            font-size: 0.9em; border-left: 4px solid #546e7a;
+        #connectionsSvg {
+            position: absolute; top:0; left:0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1;
         }
+        .connection-line { stroke: #78909c; stroke-width: 1; } /* Bluish grey */
+        .anim-dot { fill: #ff7043; opacity: 0; r: 4px; } /* Deep orange */
 
+        #output-meter-container {
+            width: 200px; height: 100px;
+            background-color: #37474f; /* Dark blue-grey meter background */
+            border-radius: 5px;
+            margin: 10px auto;
+            padding: 10px;
+            position: relative;
+            box-shadow: inset 0 0 5px black;
+        }
+        #meter-needle {
+            width: 2px; height: 45px;
+            background-color: #ffeb3b; /* Yellow needle */
+            position: absolute;
+            bottom: 10px; left: calc(50% - 1px);
+            transform-origin: 50% 100%;
+            transition: transform 0.5s ease-out;
+            transform: rotate(-90deg); /* Starts at -100 */
+        }
+        #meter-scale { /* Simple textual scale */
+            position: absolute; bottom: 12px; width: 100%; left:0;
+            display: flex; justify-content: space-between;
+            font-size: 0.7em; color: #eceff1; padding: 0 5px; box-sizing: border-box;
+        }
+        #sum-display { margin-top: 5px; font-weight: bold; }
+
+        .action-buttons { text-align: center; margin-top: 25px; }
+        .action-buttons button {
+            padding: 10px 18px; margin: 0 10px;
+            background-color: #558b2f; /* Dark Green */
+            color: white; border: none; border-radius: 5px; cursor: pointer;
+            font-size: 1em; transition: background-color 0.2s;
+        }
+        .action-buttons button:hover { background-color: #33691e; }
+        .action-buttons button:disabled { background-color: #9e9e9e; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Dial-a-Neuron! Our Little Pattern Spotter 🧠💡</h1>
+        <h1>Physical Perceptron Emulator ⚙️</h1>
         <div class="explanation">
-            <p>Hi Kids! Let's make a tiny brain cell (a <strong>Neuron</strong> or <strong>Perceptron</strong>) learn to spot a pattern! It's like the one in the video with switches and dials.</p>
+            <p>Let's build a virtual version of that cool physical Perceptron from the video!</p>
+            <p>Our mission: Teach this single <strong>Neuron</strong> to recognize a "T" shape.
+            The "T" is made of 5 switches ON: the top 3, and the middle one in the second row.</p>
             <ul>
-                <li><strong>Input Grid:</strong> Click the squares to turn them ON (1, green) or OFF (0, grey). This is our pattern.</li>
-                <li><strong>Weights (Dials):</strong> Use the sliders! These numbers tell our Neuron how important each input square is. Big positive numbers mean "Pay attention!", big negative numbers mean "Ignore this or do the opposite!".</li>
-                <li><strong>Bias:</strong> This is the Neuron's own little starting mood. It adds this to its calculation.</li>
-                <li>Our Goal: Make the Neuron say "YES!" (light up green, high number) when the <strong>TOP row is ON</strong> (1,1) and the <strong>BOTTOM row is OFF</strong> (0,0). For all other patterns, it should say "NO!" (light up red, low number).</li>
+                <li><strong>Input Switches:</strong> Flip them! ON is like +1, OFF is like -1 (for our math, though visually it's ON/OFF).</li>
+                <li><strong>Weight Dials:</strong> Adjust these like the big knobs. They tell the neuron how much to "listen" to each switch.</li>
+                <li><strong>Bias Dial:</strong> The neuron's own little push.</li>
+                <li><strong>Indicator Lights:</strong> Show which switches are ON.</li>
+                <li><strong>Output Meter:</strong> Shows the total signal strength. We want it HIGH (to the right) for a "T", and LOW (to the left) for other patterns.</li>
             </ul>
-            <p>Press <strong>"Run Brain!"</strong> to see the messages flow and the Neuron decide! Can you find the right dial (weight) settings?</p>
+            <p>Click "Run Neuron!" to see the calculation! Can you find good dial settings?</p>
         </div>
 
-        <div class="main-layout">
-            <div class="input-panel">
-                <h2>1. Input Pattern</h2>
-                <div class="input-grid" id="inputGrid">
-                    <!-- Cells will be added by JS -->
-                </div>
-                <p style="text-align:center; font-size:0.9em;">Target: Top ON, Bottom OFF</p>
+        <div class="main-area">
+            <div class="panel input-panel">
+                <h3>1. Input Switches (4x4 Grid)</h3>
+                <div class="input-grid" id="inputGrid"></div>
+                <p style="text-align:center; font-size:0.8em;">Pattern to detect: A "T" shape</p>
+                 <button onclick="setTPattern()">Set 'T' Pattern</button>
+                 <button onclick="clearPattern()">Clear Pattern</button>
             </div>
 
-            <div class="weights-panel">
-                <h2>2. Weights & Bias (Dials)</h2>
-                <div id="weightsControls">
-                    <!-- Weight sliders will be added by JS -->
+            <div class="panel weights-panel">
+                <h3>2. Weight Dials</h3>
+                <div id="weightsContainer">
+                    <!-- Dials generated by JS -->
                 </div>
-                 <div class="weight-control">
-                    <label for="biasSlider">Bias:</label>
-                    <input type="range" id="biasSlider" min="-5" max="5" value="0" step="0.1" oninput="updateCalculationsAndVisuals()">
-                    <span class="weight-value" id="biasValue">0.0</span>
+                <div id="bias-control" class="weight-dial-control">
+                    <label for="biasDial">Bias Dial:</label>
+                    <input type="range" id="biasDial" min="-10" max="10" value="0" step="0.5">
+                    <span id="biasValueDisplay">0.0</span>
                 </div>
             </div>
 
-            <div class="network-panel">
-                <h2>3. The Neuron at Work</h2>
-                <div class="network-visualization">
-                    <!-- Visual inputs on the left, output neuron on the right -->
-                    <div id="input-dots-container" style="display: flex; flex-direction: column; justify-content: space-around; height: 160px; margin-right: 50px;">
-                         <!-- Placeholder for input dots, will align with SVG connection start points -->
+            <div class="panel neuron-output-panel">
+                <h3>3. Neuron & Output</h3>
+                 <div class="input-indicator-lights" id="indicatorLights">
+                    <!-- Lights generated by JS -->
+                </div>
+                <div class="neuron-visualization">
+                     <div class="output-neuron-display" id="outputNeuron">
+                        <div class="label">Neuron</div>
+                        <div class="value">Sum: 0</div>
                     </div>
-                    <div class="neuron-vis" id="output-neuron-vis">
-                        <div class="label">Output</div>
-                        <div class="value">Sum: 0<br>Act: 0</div>
-                    </div>
-                    <svg class="connections-svg" id="connectionsSvg"></svg>
+                    <svg id="connectionsSvg"></svg>
                 </div>
-                <div class="calculation-display" id="calculationDisplay">
-                    Weighted Sum: (I1*W1) + (I2*W2) + (I3*W3) + (I4*W4) + Bias = 0
+                <div id="output-meter-container">
+                    <div id="meter-needle"></div>
+                    <div id="meter-scale"><span>-100</span><span>0</span><span>+100</span></div>
                 </div>
+                <div id="sum-display">Total Signal: 0.00</div>
+                 <div id="activation-display" style="margin-top:5px; font-size:0.9em;">(Sigmoid Activation: 0.500)</div>
+                 <p id="predictionText" style="font-weight:bold; font-size:1.1em;">Prediction: Maybe?</p>
             </div>
         </div>
-        
-        <div class="output-display">
-            Neuron's Answer: <span id="finalOutputActivation">0.500</span>
-            (<span class="prediction" id="finalOutputPrediction">Maybe?</span>)
-        </div>
 
-        <div class="controls">
-            <button id="runButton" onclick="runAnimatedForwardPass()">Run Brain!</button>
+        <div class="action-buttons">
+            <button id="runButton" onclick="runNeuronAnimation()">Run Neuron!</button>
         </div>
-
-        <div class="info-box">
-            <strong>How it "Thinks" (when you press "Run Brain!"):</strong>
-            <ol>
-                <li>The Neuron gets values (0 or 1) from each Input square.</li>
-                <li>Animated dots show the "message strength" (Input * Weight) travelling to the Output Neuron. Brighter/bigger dots mean stronger messages!</li>
-                <li>The Neuron calculates a <strong>Weighted Sum</strong>: (Input1*Weight1) + (Input2*Weight2) + ... + Bias.</li>
-                <li>It uses a "squisher" function (Sigmoid) on this sum to get its <strong>Activation</strong> (a number from 0 to 1). Close to 1 means "YES!", close to 0 means "NO!".</li>
-            </ol>
-            <p><strong>Your Challenge:</strong> Adjust the weights and bias sliders. Can you "teach" the neuron to correctly recognize the target pattern (Top row: 1,1; Bottom row: 0,0)? A good setting might make the output activation > 0.9 for the target and < 0.1 for others.</p>
-        </div>
-
     </div>
 
     <script>
-        const NUM_INPUTS = 4; // 2x2 grid
-        const ANIMATION_DURATION = 800; // ms for dot travel
-        const PULSE_DURATION = 600; // ms for neuron pulse
+        const GRID_SIZE = 4; // 4x4 grid
+        const NUM_INPUTS = GRID_SIZE * GRID_SIZE; // 16 inputs
+        const ANIM_DURATION = 600;
+        const PULSE_DURATION = 500;
 
-        // DOM Elements
-        const dom = {
-            inputGrid: document.getElementById('inputGrid'),
-            weightsControls: document.getElementById('weightsControls'),
-            biasSlider: document.getElementById('biasSlider'),
-            biasValue: document.getElementById('biasValue'),
-            outputNeuronVis: document.getElementById('output-neuron-vis'),
-            connectionsSvg: document.getElementById('connectionsSvg'),
-            calculationDisplay: document.getElementById('calculationDisplay'),
-            finalOutputActivation: document.getElementById('finalOutputActivation'),
-            finalOutputPrediction: document.getElementById('finalOutputPrediction'),
-            runButton: document.getElementById('runButton'),
-            inputDotsContainer: document.getElementById('input-dots-container')
-        };
-
-        let inputValues = [0, 0, 0, 0];
-        let weights = [0, 0, 0, 0]; // Initial weights
+        let inputStates = new Array(NUM_INPUTS).fill(0); // 0 for OFF, 1 for ON
+        let weights = new Array(NUM_INPUTS).fill(0);
         let bias = 0;
 
-        // Suggested "trained" weights for "Top ON, Bottom OFF" (1,1,0,0)
-        const trainedWeights = [2.5, 2.5, -2.5, -2.5];
-        const trainedBias = -2;
+        // "T" Pattern: Top row, and middle of second row. (Indices: 0,1,2,3,  4,5,6,7, ...)
+        // Inputs are numbered 0-15, row by row.
+        // Top row: 0, 1, 2, 3. Middle of 2nd row: 4 + 1 = 5 if 0-indexed, or 4+2=6 if considering visual 2nd from left.
+        // Let's do top 3 (0,1,2) and middle of next two rows (4+1=5, 8+1=9) for a clearer T
+        // For 4x4 grid: Top 3: (0,1,2). Center column, 2nd element down: (4*1 + 1) = 5.
+        // Let's use video example T: top 3 (0,1,2) on, 2nd row middle (5) on, 3rd row middle (9) on.
+        const T_PATTERN_INDICES = [0, 1, 2, 5, 9]; 
 
-        // --- Sigmoid Function ---
-        function sigmoid(x) {
-            return 1 / (1 + Math.exp(-x));
-        }
+        // Suggested weights: positive for T_PATTERN_INDICES, negative elsewhere
+        const SUGGESTED_WEIGHTS = weights.map((_, i) => T_PATTERN_INDICES.includes(i) ? 3 : -0.5);
+        const SUGGESTED_BIAS = -3; // To make it harder to fire unless many T-inputs are on
 
-        // --- Setup UI ---
-        function setupUI() {
-            // Input Grid
+        const domElements = {
+            inputGrid: document.getElementById('inputGrid'),
+            weightsContainer: document.getElementById('weightsContainer'),
+            biasDial: document.getElementById('biasDial'),
+            biasValueDisplay: document.getElementById('biasValueDisplay'),
+            indicatorLights: document.getElementById('indicatorLights'),
+            outputNeuron: document.getElementById('outputNeuron'),
+            connectionsSvg: document.getElementById('connectionsSvg'),
+            meterNeedle: document.getElementById('meter-needle'),
+            sumDisplay: document.getElementById('sumDisplay'),
+            activationDisplay: document.getElementById('activation-display'),
+            predictionText: document.getElementById('predictionText'),
+            runButton: document.getElementById('runButton')
+        };
+
+        function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+        function setupGridAndDials() {
             for (let i = 0; i < NUM_INPUTS; i++) {
-                const cell = document.createElement('div');
-                cell.classList.add('input-cell');
-                cell.dataset.index = i;
-                cell.textContent = `I${i+1}: 0`;
-                cell.onclick = toggleInput;
-                dom.inputGrid.appendChild(cell);
+                // Input Switch
+                const sw = document.createElement('div');
+                sw.classList.add('input-switch');
+                sw.dataset.index = i;
+                sw.title = `Input ${i+1}`;
+                sw.onclick = toggleInputSwitch;
+                domElements.inputGrid.appendChild(sw);
 
-                // Input dots for visualization
-                const dotPlaceholder = document.createElement('div');
-                dotPlaceholder.id = `input-dot-placeholder-${i}`;
-                dotPlaceholder.classList.add('neuron-vis', 'neuron-input-vis'); // Style like a neuron
-                dotPlaceholder.style.width = '30px'; dotPlaceholder.style.height = '30px';
-                dotPlaceholder.style.fontSize = '0.7em';
-                dotPlaceholder.innerHTML = `I${i+1}`;
-                dom.inputDotsContainer.appendChild(dotPlaceholder);
-
-
-                // Weight Sliders
-                const weightCtrl = document.createElement('div');
-                weightCtrl.classList.add('weight-control');
-                weightCtrl.innerHTML = `
-                    <label for="w${i}Slider">Weight W${i+1}:</label>
-                    <input type="range" id="w${i}Slider" min="-5" max="5" value="${weights[i]}" step="0.1" data-index="${i}">
-                    <span class="weight-value" id="w${i}Value">${weights[i].toFixed(1)}</span>
+                // Indicator Light
+                const light = document.createElement('div');
+                light.classList.add('indicator-light');
+                light.id = `light-${i}`;
+                domElements.indicatorLights.appendChild(light);
+                
+                // Weight Dial
+                const dialDiv = document.createElement('div');
+                dialDiv.classList.add('weight-dial-control');
+                dialDiv.innerHTML = `
+                    <label for="w${i}">W${i+1}:</label>
+                    <input type="range" id="w${i}" min="-5" max="5" value="${SUGGESTED_WEIGHTS[i]}" step="0.1" data-index="${i}">
+                    <span id="val-w${i}">${SUGGESTED_WEIGHTS[i].toFixed(1)}</span>
                 `;
-                dom.weightsControls.appendChild(weightCtrl);
-                document.getElementById(`w${i}Slider`).oninput = updateWeight;
+                domElements.weightsContainer.appendChild(dialDiv);
+                document.getElementById(`w${i}`).oninput = updateWeightDial;
+                weights[i] = SUGGESTED_WEIGHTS[i]; // Initialize JS weights array
             }
-            dom.biasSlider.oninput = updateBias;
-            updateBias(); // Initialize bias display
+            domElements.biasDial.value = SUGGESTED_BIAS;
+            bias = SUGGESTED_BIAS;
+            domElements.biasDial.oninput = updateBiasDial;
+            updateBiasDisplay();
+            drawConnections(); // Draw initial connections
+        }
+        
+        function setTPattern() {
+            clearPattern(false); // Clear without updating calculations yet
+            T_PATTERN_INDICES.forEach(idx => {
+                inputStates[idx] = 1;
+                const sw = domElements.inputGrid.children[idx];
+                sw.classList.add('active');
+                document.getElementById(`light-${idx}`).classList.add('active');
+            });
+            updateNeuronState();
         }
 
-        function toggleInput(event) {
+        function clearPattern(update = true) {
+            inputStates.fill(0);
+            Array.from(domElements.inputGrid.children).forEach(sw => sw.classList.remove('active'));
+            Array.from(domElements.indicatorLights.children).forEach(l => l.classList.remove('active'));
+            if (update) updateNeuronState();
+        }
+
+        function toggleInputSwitch(event) {
             const index = parseInt(event.target.dataset.index);
-            inputValues[index] = inputValues[index] === 0 ? 1 : 0;
-            event.target.textContent = `I${index+1}: ${inputValues[index]}`;
-            event.target.classList.toggle('active', inputValues[index] === 1);
-            updateCalculationsAndVisuals();
+            inputStates[index] = inputStates[index] === 0 ? 1 : 0;
+            event.target.classList.toggle('active', inputStates[index] === 1);
+            document.getElementById(`light-${index}`).classList.toggle('active', inputStates[index] === 1);
+            updateNeuronState();
         }
 
-        function updateWeight(event) {
+        function updateWeightDial(event) {
             const index = parseInt(event.target.dataset.index);
             weights[index] = parseFloat(event.target.value);
-            document.getElementById(`w${index}Value`).textContent = weights[index].toFixed(1);
-            updateCalculationsAndVisuals();
+            document.getElementById(`val-w${index}`).textContent = weights[index].toFixed(1);
+            updateNeuronState();
         }
 
-        function updateBias() {
-            bias = parseFloat(dom.biasSlider.value);
-            dom.biasValue.textContent = bias.toFixed(1);
-            updateCalculationsAndVisuals();
+        function updateBiasDial() {
+            bias = parseFloat(domElements.biasDial.value);
+            updateBiasDisplay();
+            updateNeuronState();
+        }
+        function updateBiasDisplay(){
+            domElements.biasValueDisplay.textContent = bias.toFixed(1);
         }
         
-        // --- Drawing Connections ---
-        let inputDotPositions = [];
-        let outputNeuronPosition;
-
-        function getElementCenter(el) {
-            const rect = el.getBoundingClientRect();
-            const svgRect = dom.connectionsSvg.getBoundingClientRect();
-            return {
-                x: rect.left + rect.width / 2 - svgRect.left,
-                y: rect.top + rect.height / 2 - svgRect.top,
-            };
+        // --- Neuron Calculation and Display Update (No Animation) ---
+        function calculateWeightedSum() {
+            let sum = bias;
+            for (let i = 0; i < NUM_INPUTS; i++) {
+                // The video implies ON switch is +V, OFF is -V. Let's map 0 to -1, 1 to +1.
+                const actualInputValue = inputStates[i] === 1 ? 1 : -1; 
+                sum += actualInputValue * weights[i];
+            }
+            return sum;
         }
 
-        function drawConnections() {
-            dom.connectionsSvg.innerHTML = ''; // Clear existing
-            outputNeuronPosition = getElementCenter(dom.outputNeuronVis);
-            inputDotPositions = [];
-
-            for (let i = 0; i < NUM_INPUTS; i++) {
-                const inputPlaceholder = document.getElementById(`input-dot-placeholder-${i}`);
-                inputDotPositions[i] = getElementCenter(inputPlaceholder);
-
-                // Line
-                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                line.setAttribute('x1', inputDotPositions[i].x);
-                line.setAttribute('y1', inputDotPositions[i].y);
-                line.setAttribute('x2', outputNeuronPosition.x);
-                line.setAttribute('y2', outputNeuronPosition.y);
-                line.classList.add('connection-line');
-                line.id = `line-i${i}-out`;
-                dom.connectionsSvg.appendChild(line);
-
-                // Weight display on line
-                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                text.setAttribute('x', (inputDotPositions[i].x + outputNeuronPosition.x) / 2 - 15);
-                text.setAttribute('y', (inputDotPositions[i].y + outputNeuronPosition.y) / 2 - 5);
-                text.classList.add('weight-display-svg');
-                text.id = `weight-text-i${i}`;
-                text.textContent = `W${i+1}=${weights[i].toFixed(1)}`;
-                dom.connectionsSvg.appendChild(text);
-
-                // Animated dot (initially hidden)
-                const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                dot.id = `dot-i${i}-out`;
-                dot.setAttribute('cx', inputDotPositions[i].x);
-                dot.setAttribute('cy', inputDotPositions[i].y);
-                dot.classList.add('anim-dot');
-                dom.connectionsSvg.appendChild(dot);
-            }
-            // Bias "connection" (conceptual)
-            const biasText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            biasText.setAttribute('x', outputNeuronPosition.x);
-            biasText.setAttribute('y', outputNeuronPosition.y + 55); // Below neuron
-            biasText.classList.add('weight-display-svg');
-            biasText.id = 'bias-text-svg';
-            biasText.textContent = `Bias=${bias.toFixed(1)}`;
-            dom.connectionsSvg.appendChild(biasText);
-
-            // Update dynamic weight text on lines
-            for (let i = 0; i < NUM_INPUTS; i++) {
-                const weightTextEl = document.getElementById(`weight-text-i${i}`);
-                if (weightTextEl) weightTextEl.textContent = `W${i+1}=${weights[i].toFixed(1)}`;
-            }
-            const biasTextEl = document.getElementById('bias-text-svg');
-            if (biasTextEl) biasTextEl.textContent = `Bias=${bias.toFixed(1)}`;
-        }
-
-        // --- Calculations and Visual Updates (No Animation) ---
-        function calculateForwardPass() {
-            let weightedSum = bias;
-            let calcString = `Bias (${bias.toFixed(1)})`;
-
-            for (let i = 0; i < NUM_INPUTS; i++) {
-                weightedSum += inputValues[i] * weights[i];
-                calcString += ` + (I${i+1}[${inputValues[i]}] * W${i+1}[${weights[i].toFixed(1)}])`;
-            }
-            calcString += ` = ${weightedSum.toFixed(2)}`;
+        function updateNeuronState() {
+            const weightedSum = calculateWeightedSum();
+            const activation = sigmoid(weightedSum); // Sigmoid for 0-1 range
             
-            const activation = sigmoid(weightedSum);
-            return { weightedSum, activation, calcString };
+            domElements.outputNeuron.children[1].innerHTML = `Sum: ${weightedSum.toFixed(1)}`;
+            domElements.sumDisplay.textContent = `Total Signal: ${weightedSum.toFixed(2)}`;
+            domElements.activationDisplay.textContent = `(Sigmoid Activation: ${activation.toFixed(3)})`;
+
+            // Meter: Map weightedSum (e.g. -50 to +50 range) to rotation (-90 to +90 deg)
+            // Assuming sum could range approx - (16*5 + 10) to + (16*5 + 10) = -90 to +90
+            const meterRange = 100; // Arbitrary max for meter
+            const meterValue = Math.max(-meterRange, Math.min(meterRange, weightedSum));
+            const rotation = (meterValue / meterRange) * 90; // Max 90 deg rotation
+            domElements.meterNeedle.style.transform = `rotate(${rotation}deg)`;
+
+            // Prediction based on thresholding the raw sum (more like a classic Perceptron)
+            // Or use activation if you prefer a smoothed output
+            const threshold = 0; // Classic Perceptron threshold
+            if (weightedSum > (T_PATTERN_INDICES.length * 2.5 + SUGGESTED_BIAS - 5) ) { // Heuristic threshold for "T"
+                 domElements.predictionText.textContent = "Prediction: Looks like a T!";
+                 domElements.predictionText.style.color = "#2e7d32"; // Dark green
+            } else if (weightedSum < 0){
+                 domElements.predictionText.textContent = "Prediction: Not a T.";
+                 domElements.predictionText.style.color = "#c62828"; // Dark red
+            } else {
+                domElements.predictionText.textContent = "Prediction: Maybe?";
+                domElements.predictionText.style.color = "#546e7a"; // Blue grey
+            }
         }
         
-        function updateCalculationsAndVisuals() {
-            const { weightedSum, activation, calcString } = calculateForwardPass();
+        // --- Animations & Connections ---
+        let lightPositions = [];
+        let outputNeuronCenter;
 
-            dom.outputNeuronVis.innerHTML = `
-                <div class="label">Output</div>
-                <div class="value">Sum: ${weightedSum.toFixed(2)}<br>Act: ${activation.toFixed(3)}</div>`;
-            dom.calculationDisplay.textContent = `Weighted Sum: ${calcString}`;
-            dom.finalOutputActivation.textContent = activation.toFixed(3);
+        function drawConnections(){
+            domElements.connectionsSvg.innerHTML = '';
+            outputNeuronCenter = getElementCenter(domElements.outputNeuron);
+            lightPositions = [];
+            const lights = domElements.indicatorLights.children;
+            for(let i=0; i<NUM_INPUTS; i++) {
+                lightPositions[i] = getElementCenter(lights[i]);
+                
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute('x1', lightPositions[i].x);
+                line.setAttribute('y1', lightPositions[i].y);
+                line.setAttribute('x2', outputNeuronCenter.x);
+                line.setAttribute('y2', outputNeuronCenter.y);
+                line.classList.add('connection-line');
+                domElements.connectionsSvg.appendChild(line);
 
-            if (activation > 0.7) { // Threshold for "YES"
-                dom.finalOutputPrediction.textContent = "YES!";
-                dom.finalOutputPrediction.className = "prediction yes";
-                dom.outputNeuronVis.style.backgroundColor = '#81c784'; // Brighter green for YES
-            } else if (activation < 0.3) { // Threshold for "NO"
-                dom.finalOutputPrediction.textContent = "NO!";
-                dom.finalOutputPrediction.className = "prediction no";
-                 dom.outputNeuronVis.style.backgroundColor = '#e57373'; // Brighter red for NO
-            } else {
-                dom.finalOutputPrediction.textContent = "Maybe?";
-                dom.finalOutputPrediction.className = "prediction";
-                dom.outputNeuronVis.style.backgroundColor = '#ffc107'; // Amber for neutral
+                const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                dot.id = `dot-${i}`;
+                dot.setAttribute('cx', lightPositions[i].x);
+                dot.setAttribute('cy', lightPositions[i].y);
+                dot.classList.add('anim-dot');
+                domElements.connectionsSvg.appendChild(dot);
             }
-            drawConnections(); // Redraw connections to update weight text
         }
 
-        // --- Animation ---
         function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-        async function pulseNeuron(neuronEl) {
-            neuronEl.classList.add('pulsing');
-            await sleep(PULSE_DURATION);
-            neuronEl.classList.remove('pulsing');
-        }
-
-        async function animateSignal(inputId) {
-            const dot = document.getElementById(`dot-i${inputId}-out`);
-            if (!dot || inputValues[inputId] === 0) { // Only animate if input is ON
-                if (dot) dot.style.opacity = 0;
+        async function animateSignalFlow(inputId) {
+            const dot = document.getElementById(`dot-${inputId}`);
+            if (!dot || inputStates[inputId] === 0) { // Only animate if input is ON
+                if(dot) dot.style.opacity = 0;
                 return;
             }
 
-            const startPos = inputDotPositions[inputId];
-            const endPos = outputNeuronPosition;
-            const weightAbs = Math.abs(weights[inputId]);
-            
-            // Visual feedback for strength: dot size and color intensity
-            dot.setAttribute('r', 3 + weightAbs * 1.5); // Base radius 3, grows with weight
-            dot.style.fill = weights[inputId] >= 0 ? '#4caf50' : '#f44336'; // Green for positive, red for negative weight influence
-            dot.style.opacity = 0.5 + Math.min(0.5, weightAbs / 5); // Opacity based on weight strength
+            const startPos = lightPositions[inputId];
+            const endPos = outputNeuronCenter;
+            const actualInputValue = 1; // Since we only animate for ON inputs (value 1)
+            const signalStrength = actualInputValue * weights[inputId];
+
+            dot.style.opacity = 0.2 + Math.min(0.8, Math.abs(signalStrength) / 5); // Opacity for strength
+            dot.setAttribute('r', 3 + Math.min(4, Math.abs(signalStrength) / 2));
+            dot.style.fill = signalStrength >=0 ? '#4caf50' : '#e53935'; // Green/Red for positive/negative effective signal
+
 
             let startTime = null;
-            function animationStep(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / ANIMATION_DURATION, 1);
-                dot.setAttribute('cx', startPos.x + (endPos.x - startPos.x) * progress);
-                dot.setAttribute('cy', startPos.y + (endPos.y - startPos.y) * progress);
-                if (progress < 1) requestAnimationFrame(animationStep);
-                else { dot.style.opacity = 0; } // Hide after travel
-            }
-             return new Promise(resolve => {
-                requestAnimationFrame(function(timestamp) {
-                    startTime = timestamp; // Reset start time for this animation
-                    requestAnimationFrame(function step(ts) {
-                        const progress = Math.min((ts - startTime) / ANIMATION_DURATION, 1);
-                        dot.setAttribute('cx', startPos.x + (endPos.x - startPos.x) * progress);
-                        dot.setAttribute('cy', startPos.y + (endPos.y - startPos.y) * progress);
-                        if (progress < 1) requestAnimationFrame(step);
-                        else { dot.style.opacity = 0; resolve(); }
-                    });
+            return new Promise(resolve => {
+                requestAnimationFrame(function step(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    const progress = Math.min((timestamp - startTime) / ANIM_DURATION, 1);
+                    dot.setAttribute('cx', startPos.x + (endPos.x - startPos.x) * progress);
+                    dot.setAttribute('cy', startPos.y + (endPos.y - startPos.y) * progress);
+                    if (progress < 1) requestAnimationFrame(step);
+                    else { dot.style.opacity = 0; resolve(); }
                 });
             });
         }
         
         let isAnimating = false;
-        async function runAnimatedForwardPass() {
+        async function runNeuronAnimation() {
             if (isAnimating) return;
             isAnimating = true;
-            dom.runButton.disabled = true;
+            domElements.runButton.disabled = true;
 
-            // Highlight active inputs briefly
-            const inputPromises = [];
-            for (let i = 0; i < NUM_INPUTS; i++) {
-                if (inputValues[i] === 1) {
-                    const inputVis = document.getElementById(`input-dot-placeholder-${i}`);
-                    if(inputVis) inputPromises.push(pulseNeuron(inputVis));
+            // Indicate active inputs pulsing
+            const lightPromises = [];
+            for (let i=0; i<NUM_INPUTS; i++) {
+                if (inputStates[i] === 1) {
+                    const lightEl = document.getElementById(`light-${i}`);
+                    lightEl.style.transition = 'none'; // Allow immediate change for pulse
+                    lightEl.style.backgroundColor = '#ff9800'; // Pulse color
+                    lightPromises.push(sleep(PULSE_DURATION/2).then(() => {
+                        lightEl.style.transition = 'background-color 0.3s'; // Restore transition
+                        lightEl.style.backgroundColor = '#ff5722'; // Back to active color
+                    }));
                 }
             }
-            if (inputPromises.length > 0) await Promise.all(inputPromises);
-            else await sleep(PULSE_DURATION/2); // Small pause even if no inputs are on
+            if (lightPromises.length > 0) await Promise.all(lightPromises);
+            else await sleep(PULSE_DURATION/3);
 
-            // Animate signals from inputs to output
+
             const signalAnimations = [];
             for (let i = 0; i < NUM_INPUTS; i++) {
-                 if (inputValues[i] === 1) { // Only animate if input is ON
-                    signalAnimations.push(animateSignal(i));
-                 }
+                if (inputStates[i] === 1) signalAnimations.push(animateSignalFlow(i));
             }
             if(signalAnimations.length > 0) await Promise.all(signalAnimations);
-            else await sleep(ANIMATION_DURATION/2); // Pause if no signals
+            else await sleep(ANIM_DURATION/2);
 
-            // Recalculate (already done by input/weight changes, but ensures consistency)
-            // and update visuals (this also pulses the output neuron now)
-            updateCalculationsAndVisuals(); // This updates the text and color
-            await pulseNeuron(dom.outputNeuronVis); // Explicitly pulse output neuron
+
+            updateNeuronState(); // Final state update after animations could finish
+            domElements.outputNeuron.classList.add('pulsing');
+            await sleep(PULSE_DURATION);
+            domElements.outputNeuron.classList.remove('pulsing');
             
             isAnimating = false;
-            dom.runButton.disabled = false;
+            domElements.runButton.disabled = false;
         }
 
-
-        // --- Initialization ---
+        // --- Initial Setup ---
         window.onload = () => {
-            setupUI();
-            // Optional: Start with "trained" weights or encourage user to find them
-             for (let i = 0; i < NUM_INPUTS; i++) {
-                 document.getElementById(`w${i}Slider`).value = trainedWeights[i];
-                 weights[i] = trainedWeights[i]; // Also update the actual weight variable
-                 document.getElementById(`w${i}Value`).textContent = weights[i].toFixed(1);
-             }
-             dom.biasSlider.value = trainedBias;
-             bias = trainedBias; // Update bias variable
-             dom.biasValue.textContent = bias.toFixed(1);
-
-            updateCalculationsAndVisuals(); // Initial calculation and drawing
+            setupGridAndDials();
+            clearPattern(); // Start with a clear pattern & calculate initial state
         };
-        window.onresize = () => {
-            updateCalculationsAndVisuals(); // Redraw everything on resize
+         window.onresize = () => { // Redraw if window size changes
+            drawConnections();
+            // updateNeuronState(); // Also update positions if layout is very fluid
         };
 
     </script>
 </body>
-</html>
+</html> 
